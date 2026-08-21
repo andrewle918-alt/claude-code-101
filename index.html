@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Claude Code 101 — Learn Claude Code</title>
+<meta name="description" content="An interactive, hands-on tutorial for learning Claude Code from scratch." />
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🤖</text></svg>" />
+<link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-icon" aria-hidden="true">▶_</span>
+        <span class="brand-text">Claude Code 101</span>
+      </div>
+      <div class="progress-wrap" title="Your progress">
+        <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+        <span class="progress-label" id="progress-label">0 / 0 lessons</span>
+      </div>
+      <button class="reset-btn" id="reset-progress" title="Reset progress">Reset</button>
+    </header>
+
+    <div class="body">
+      <nav class="sidebar" id="sidebar" aria-label="Lessons">
+        <!-- lesson list injected by JS -->
+      </nav>
+
+      <main class="content" id="content">
+        <!-- lesson content injected by JS -->
+      </main>
+    </div>
+  </div>
+
+  <script src="js/lessons.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
