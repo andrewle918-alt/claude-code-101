@@ -497,6 +497,32 @@ function exportICS() {
 
   const pad = n => String(n).padStart(2, "0");
   const DAYS = ["SU","MO","TU","WE","TH","FR","SA"];
+
+  /* RFC 5545 escaping for TEXT values: a bare comma or semicolon would be read
+   * as a value separator and split the field. */
+  const esc5545 = v => String(v)
+    .replace(/\\/g, "\\\\")
+    .replace(/;/g, "\\;")
+    .replace(/,/g, "\\,")
+    .replace(/\r?\n/g, "\\n");
+
+  /* RFC 5545 line folding: content lines cap at 75 octets, continued by CRLF
+   * plus one space. Measured in UTF-8 octets, and never split mid-character. */
+  const fold = line => {
+    const bytes = new TextEncoder().encode(line);
+    if (bytes.length <= 75) return line;
+    const out = [];
+    let start = 0, limit = 75;
+    while (start < bytes.length) {
+      let end = Math.min(start + limit, bytes.length);
+      // Back off until we're on a UTF-8 character boundary.
+      while (end > start && end < bytes.length && (bytes[end] & 0xc0) === 0x80) end--;
+      out.push(new TextDecoder().decode(bytes.subarray(start, end)));
+      start = end;
+      limit = 74; // continuation lines carry a leading space
+    }
+    return out.join("\r\n ");
+  };
   const stamp = new Date().toISOString().replace(/[-:]|\.\d{3}/g, "");
   const lines = [
     "BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Sweep//Access One//EN",
@@ -524,18 +550,18 @@ function exportICS() {
       `DTSTART:${fmt(sh, sm)}`,
       `DTEND:${fmt(eh, em)}`,
       `RRULE:FREQ=WEEKLY;BYDAY=${DAYS[s.day]}`,
-      "SUMMARY:Access One — sweep Canvas",
-      `DESCRIPTION:First thing this shift: go through Canvas course by course and pull out everything due this week.${summary ? " (" + summary + ")" : ""}`,
+      `SUMMARY:${esc5545("Access One — sweep Canvas")}`,
+      `DESCRIPTION:${esc5545("First thing this shift: go through Canvas course by course and pull out everything due this week." + (summary ? " (" + summary + ")" : ""))}`,
       ...offsets.flatMap(o => [
         "BEGIN:VALARM", `TRIGGER:PT${o}M`, "ACTION:DISPLAY",
-        "DESCRIPTION:Access One — start with Canvas", "END:VALARM",
+        `DESCRIPTION:${esc5545("Access One — start with Canvas")}`, "END:VALARM",
       ]),
       "END:VEVENT",
     );
   });
 
   lines.push("END:VCALENDAR");
-  const blob = new Blob([lines.join("\r\n")], { type: "text/calendar" });
+  const blob = new Blob([lines.map(fold).join("\r\n") + "\r\n"], { type: "text/calendar" });
   const a = Object.assign(document.createElement("a"),
     { href: URL.createObjectURL(blob), download: "access-one.ics" });
   document.body.appendChild(a); a.click(); a.remove();
