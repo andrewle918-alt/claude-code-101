@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<meta name="description" content="Sweep — a quiet place to collect the week's coursework and keep it moving.">
+<title>Sweep</title>
+<link rel="stylesheet" href="css/style.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#129529;</text></svg>">
+</head>
+<body>
+
+<div class="app" id="app" hidden>
+
+  <header class="masthead">
+    <div class="masthead-inner">
+      <p class="eyebrow" id="eyebrow">—</p>
+      <h1 class="title">Sweep</h1>
+      <p class="subtitle" id="subtitle">—</p>
+    </div>
+    <button class="icon-btn" id="settings-btn" aria-label="Settings" title="Settings">
+      <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.1"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6 1.65 1.65 0 0 0 10 3.09V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9c.2.5.66.86 1.2.98H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/></svg>
+    </button>
+  </header>
+
+  <!-- Shift banner: the Access One reminder, in-app -->
+  <section id="shift-banner" class="banner" hidden></section>
+
+  <!-- First-run: no shifts configured -->
+  <section id="setup-card" class="setup" hidden></section>
+
+  <div class="seg-bar">
+    <nav class="segmented" role="tablist" aria-label="Views">
+      <button role="tab" class="seg" data-view="today">Today</button>
+      <button role="tab" class="seg" data-view="week">Week</button>
+      <button role="tab" class="seg" data-view="all">All</button>
+      <button role="tab" class="seg" data-view="sweep">Sweep</button>
+    </nav>
+  </div>
+
+  <main id="view" class="view" role="tabpanel"></main>
+
+  <div class="composer-dock">
+    <button class="composer-open" id="add-btn">
+      <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 4.2v11.6M4.2 10h11.6" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" fill="none"/></svg>
+      <span>Add a task</span>
+    </button>
+  </div>
+
+</div>
+
+<!-- Task sheet -->
+<div class="scrim" id="scrim" hidden></div>
+
+<div class="sheet" id="task-sheet" role="dialog" aria-modal="true" aria-labelledby="task-sheet-title" hidden>
+  <div class="sheet-grabber"></div>
+  <div class="sheet-head">
+    <button class="sheet-cancel" data-close>Cancel</button>
+    <h2 id="task-sheet-title">New Task</h2>
+    <button class="sheet-done" id="task-save">Add</button>
+  </div>
+  <form class="sheet-body" id="task-form" autocomplete="off">
+    <input type="hidden" id="task-id">
+    <div class="field-group">
+      <input class="field-title" id="task-title" placeholder="What needs doing?" required maxlength="180">
+      <textarea class="field-notes" id="task-notes" placeholder="Notes" rows="2" maxlength="800"></textarea>
+    </div>
+    <div class="field-group">
+      <label class="row"><span>Course</span><select id="task-course"></select></label>
+      <label class="row"><span>Due</span><input type="date" id="task-due"></label>
+      <label class="row"><span>Effort</span><select id="task-est">
+        <option value="">—</option><option value="15">15 min</option><option value="30">30 min</option>
+        <option value="60">1 hour</option><option value="120">2 hours</option><option value="240">4 hours+</option>
+      </select></label>
+      <label class="row"><span>Flag</span><input type="checkbox" id="task-flag" class="switch"></label>
+    </div>
+    <button type="button" class="destructive" id="task-delete" hidden>Delete Task</button>
+  </form>
+</div>
+
+<!-- Settings sheet -->
+<div class="sheet sheet-tall" id="settings-sheet" role="dialog" aria-modal="true" aria-labelledby="settings-title" hidden>
+  <div class="sheet-grabber"></div>
+  <div class="sheet-head">
+    <button class="sheet-cancel" data-close>Done</button>
+    <h2 id="settings-title">Settings</h2>
+    <span class="sheet-done-spacer"></span>
+  </div>
+  <div class="sheet-body" id="settings-body"></div>
+</div>
+
+<noscript><p style="padding:2rem;font:16px/1.5 system-ui">Sweep needs JavaScript enabled.</p></noscript>
+
+<script src="js/config.js"></script>
+<script src="js/store.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
