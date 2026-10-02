@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Hay There — Horse Tinder</title>
+<meta name="description" content="Swipe right on horses. Find your stable mate." />
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🐴</text></svg>" />
+<link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <div class="brand"><span aria-hidden="true">🐴</span> hay there</div>
+      <nav class="tabs" role="tablist">
+        <button class="tab active" data-view="discover" role="tab">Discover</button>
+        <button class="tab" data-view="matches" role="tab">Matches <span class="badge" id="match-count" hidden>0</span></button>
+      </nav>
+    </header>
+
+    <main>
+      <section class="view" id="view-discover">
+        <div class="deck" id="deck" aria-live="polite"></div>
+        <div class="actions" id="actions">
+          <button class="act nope" id="btn-nope" title="Nope (←)" aria-label="Nope">✕</button>
+          <button class="act super" id="btn-super" title="Sugar cube (↑)" aria-label="Send a sugar cube">🍬</button>
+          <button class="act like" id="btn-like" title="Like (→)" aria-label="Like">♥</button>
+        </div>
+        <p class="hint">Drag the card, use the buttons, or press ← ↑ →</p>
+      </section>
+
+      <section class="view" id="view-matches" hidden>
+        <div id="match-list"></div>
+        <div id="chat" hidden>
+          <div class="chat-head">
+            <button class="back" id="chat-back" aria-label="Back to matches">←</button>
+            <div class="mini-avatar" id="chat-avatar"></div>
+            <strong id="chat-name"></strong>
+          </div>
+          <div class="chat-log" id="chat-log"></div>
+          <form class="chat-form" id="chat-form" autocomplete="off">
+            <input id="chat-input" type="text" placeholder="Say something... or just neigh" maxlength="200" />
+            <button type="submit">Send</button>
+          </form>
+        </div>
+      </section>
+    </main>
+
+    <footer class="foot"><button class="link" id="reset">Reset everything</button></footer>
+  </div>
+
+  <div class="modal" id="match-modal" hidden>
+    <div class="modal-card">
+      <h2>It's a match!</h2>
+      <p id="match-text"></p>
+      <div class="pair"><div class="mini-avatar big" id="match-avatar"></div></div>
+      <button class="primary" id="match-chat">Say neigh 👋</button>
+      <button class="link" id="match-keep">Keep swiping</button>
+    </div>
+  </div>
+
+  <script src="js/horses.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
