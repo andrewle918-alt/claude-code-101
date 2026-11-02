@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Elementary Steps">
+<title>Elementary Steps Flashcards</title>
+<style>
+:root{
+  --bg:#f3f5f9; --panel:#fff; --ink:#14181f; --muted:#5b6575; --line:#d9dee8;
+  --accent:#2457d6; --accent-ink:#fff; --good:#1f8a4c; --good-bg:#e1f5e9; --bad:#c0392b; --bad-bg:#fbe5e2;
+  --shadow:0 6px 24px rgba(20,30,60,.10);
+}
+@media (prefers-color-scheme: dark){
+  :root{ --bg:#0f131a; --panel:#1b212c; --ink:#eef1f6; --muted:#9aa5b8; --line:#2d3646;
+    --accent:#6b93ff; --accent-ink:#0b1020; --good:#5fd08b; --good-bg:#16301f; --bad:#ff8a7a; --bad-bg:#3a1b17;
+    --shadow:0 6px 24px rgba(0,0,0,.4);}
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--ink);
+  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;}
+body{min-height:100vh;padding:max(14px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) max(16px,env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left));}
+.wrap{max-width:920px;margin:0 auto}
+header{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin-bottom:12px}
+h1{font-size:22px;margin:0;letter-spacing:-.01em}
+.seg{display:inline-flex;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:3px;gap:3px}
+.seg button{border:0;background:transparent;color:var(--ink);font-weight:600;font-size:15px;font-family:inherit;padding:10px 14px;border-radius:9px;min-height:44px;cursor:pointer}
+.seg button.on{background:var(--accent);color:var(--accent-ink)}
+.bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin-bottom:12px}
+.btn{border:1px solid var(--line);background:var(--panel);color:var(--ink);font-weight:600;font-size:16px;font-family:inherit;border-radius:12px;padding:12px 18px;min-height:50px;cursor:pointer}
+.btn:active{transform:scale(.98)}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:transparent}
+.btn[disabled]{opacity:.4}
+.count{font-weight:700;color:var(--muted);font-variant-numeric:tabular-nums}
+.dots{display:flex;gap:6px;justify-content:center;margin:12px 0 0}
+.dots i{width:9px;height:9px;border-radius:50%;background:var(--line)}
+.dots i.cur{background:var(--accent)}
+
+/* flip card */
+.scene{perspective:1400px;height:clamp(430px,68vh,640px)}
+.card{position:relative;width:100%;height:100%;transform-style:preserve-3d;transition:transform .5s cubic-bezier(.3,.7,.2,1);cursor:pointer}
+.card.flipped{transform:rotateY(180deg)}
+.face{position:absolute;inset:0;background:var(--panel);border:1px solid var(--line);border-radius:22px;box-shadow:var(--shadow);
+  backface-visibility:hidden;-webkit-backface-visibility:hidden;display:flex;flex-direction:column;overflow:hidden}
+.face.back{transform:rotateY(180deg)}
+.face .scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:22px 26px;display:flex;flex-direction:column;align-items:center}
+.face .center{margin:auto;text-align:center}
+.num{font-size:15px;font-weight:700;color:var(--accent);letter-spacing:.08em;text-transform:uppercase}
+.big{font-size:clamp(30px,6vw,56px);font-weight:800;letter-spacing:-.02em;line-height:1.1;margin:10px 0}
+.hint{color:var(--muted);font-size:15px;margin-top:18px}
+.name-sm{font-size:24px;font-weight:800;margin:2px 0 10px;text-align:center}
+.draw{background:#fff;border-radius:14px;border:1px solid #e3e7ee;padding:6px;width:100%;max-width:640px}
+.draw svg{width:100%;height:auto;display:block}
+.desc{max-width:640px;margin-top:14px;font-size:18px;line-height:1.5;text-align:left;width:100%}
+.desc p{margin:0 0 8px}
+.desc .key{background:var(--good-bg);border-left:4px solid var(--good);padding:8px 12px;border-radius:8px;margin-top:8px;font-size:16px}
+.navrow{display:flex;gap:10px;margin-top:14px}
+.navrow .btn{flex:1}
+
+/* quiz */
+.qcard{background:var(--panel);border:1px solid var(--line);border-radius:22px;box-shadow:var(--shadow);padding:22px 26px}
+.qprompt{font-size:20px;font-weight:700;margin:4px 0 14px;text-align:center}
+.qdesc{font-size:20px;line-height:1.5;text-align:center;margin:10px auto 18px;max-width:680px}
+.opts{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px}
+@media (max-width:640px){.opts{grid-template-columns:1fr}}
+.opt{border:2px solid var(--line);background:var(--panel);color:var(--ink);font-weight:700;font-size:18px;font-family:inherit;border-radius:14px;padding:16px;min-height:64px;text-align:left;cursor:pointer}
+.opt.good{border-color:var(--good);background:var(--good-bg)}
+.opt.bad{border-color:var(--bad);background:var(--bad-bg)}
+.opt[disabled]{cursor:default}
+.explain{margin-top:16px;padding:12px 14px;border-radius:12px;background:var(--bg);font-size:17px;line-height:1.5}
+.score{font-size:64px;font-weight:800;text-align:center;margin:10px 0}
+.missed{margin:10px auto;max-width:520px;padding-left:20px;font-size:18px;line-height:1.7}
+.center-col{display:flex;flex-direction:column;align-items:center;gap:12px}
+.hidden{display:none!important}
+</style>
+</head>
+<body>
+<!-- shared arrowhead markers (kept visible so Safari renders them in every card) -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <marker id="ahR" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="11" markerHeight="11" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0,1 L10,5 L0,9 z" fill="#d62828"/></marker>
+    <marker id="ahK" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="12" markerHeight="12" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0,1 L10,5 L0,9 z" fill="#111"/></marker>
+    <marker id="ahG" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0,1 L10,5 L0,9 z" fill="#6b705c"/></marker>
+  </defs>
+</svg>
+
+<div class="wrap">
+  <header>
+    <h1>10 Elementary Steps</h1>
+    <div class="seg" id="modeSeg">
+      <button data-mode="study" class="on">Flashcards</button>
+      <button data-mode="quiz">Quiz</button>
+    </div>
+  </header>
+
+  <!-- STUDY -->
+  <section id="study">
+    <div class="bar">
+      <div class="seg" id="dirSeg">
+        <button data-dir="name" class="on">Name → Mechanism</button>
+        <button data-dir="mech">Mechanism → Name</button>
+      </div>
+      <div style="display:flex;gap:10px;align-items:center">
+        <span class="count" id="count">1 / 10</span>
+        <button class="btn" id="shuffleBtn">⇄ Shuffle</button>
+      </div>
+    </div>
+    <div class="scene"><div class="card" id="card">
+      <div class="face front" id="front"></div>
+      <div class="face back" id="back"></div>
+    </div></div>
+    <div class="dots" id="dots"></div>
+    <div class="navrow">
+      <button class="btn" id="prev">← Previous</button>
+      <button class="btn primary" id="flip">Flip</button>
+      <button class="btn" id="next">Next →</button>
+    </div>
+  </section>
+
+  <!-- QUIZ -->
+  <section id="quiz" class="hidden">
+    <div class="bar">
+      <span class="count" id="qcount"></span>
+      <span class="count" id="qscore"></span>
+    </div>
+    <div class="qcard" id="qbody"></div>
+  </section>
+</div>
+
+<script>
+/* ---------- SVG drawing helpers ---------- */
+const INK='#111', RED='#d62828', GRAY='#6b705c', BLUE='#0a6ebd', TEAL='#0a9396';
+const T=(x,y,s,o={})=>`<text x="${x}" y="${y}" font-size="${o.s||15}" text-anchor="${o.a||'middle'}" fill="${o.c||INK}" font-weight="${o.w||400}"${o.i?' font-style="italic"':''}>${s}</text>`;
+const A=(x,cy,s,c)=>`<text x="${x}" y="${cy+8}" font-size="23" text-anchor="middle" fill="${c||INK}" font-weight="500">${s}</text>`;
+const B=(x1,y1,x2,y2)=>`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${INK}" stroke-width="2.2" stroke-linecap="round"/>`;
+const DBh=(x1,x2,y)=>B(x1,y-3.5,x2,y-3.5)+B(x1,y+3.5,x2,y+3.5);
+const DBv=(x,y1,y2)=>B(x-3.5,y1,x-3.5,y2)+B(x+3.5,y1,x+3.5,y2);
+const AR=d=>`<path d="${d}" fill="none" stroke="${RED}" stroke-width="2.4" stroke-linecap="round" marker-end="url(#ahR)"/>`;
+const RX=(x1,x2,y)=>`<line x1="${x1}" y1="${y}" x2="${x2}" y2="${y}" stroke="${INK}" stroke-width="2.2" marker-end="url(#ahK)"/>`;
+const LP=(x,y)=>`<circle cx="${x-4}" cy="${y}" r="2.3" fill="${INK}"/><circle cx="${x+4}" cy="${y}" r="2.3" fill="${INK}"/>`;
+const CH=(x,y,sign)=>`<circle cx="${x}" cy="${y}" r="7.5" fill="#fff" stroke="${INK}" stroke-width="1.3"/><path d="M${x-3.6} ${y}H${x+3.6}${sign==='+'?`M${x} ${y-3.6}V${y+3.6}`:''}" stroke="${INK}" stroke-width="1.4" fill="none"/>`;
+const PLUS=(x,y)=>T(x,y+8,'+',{s:24});
+const NOTE=(tx,ty,fx,label,anchor)=>T(tx,ty,label,{s:14,c:GRAY,i:1,a:anchor||'middle'})+
+  `<line x1="${fx[0]}" y1="${fx[1]}" x2="${fx[2]}" y2="${fx[3]}" stroke="${GRAY}" stroke-width="1.6" stroke-dasharray="3 3" marker-end="url(#ahG)"/>`;
+const LBL=(x,y,s)=>T(x,y,s,{s:15,w:700});
+const svg=(w,h,body)=>`<svg viewBox="0 0 ${w} ${h}" xmlns="http://www.w3.org/2000/svg" role="img">${body}</svg>`;
+
+/* ---------- Diagrams ---------- */
+const D={};
+
+D.proton=()=>svg(600,175,
+  A(55,95,'B')+LP(55,72)+CH(73,80,'-')+PLUS(108,95)+A(150,95,'H')+B(162,95,184,95)+A(196,95,'A')+
+  AR('M 58 64 Q 105 14 148 78')+AR('M 173 91 Q 178 52 197 76')+
+  RX(245,325,95)+
+  A(385,95,'B')+B(397,95,419,95)+A(431,95,'H')+PLUS(478,95)+A(520,95,'A')+LP(520,72)+CH(538,80,'-')+
+  LBL(55,145,'Base')+LBL(173,145,'Acid'));
+
+D.sn2=()=>svg(600,180,
+  A(50,95,'Nu')+LP(50,72)+CH(72,80,'-')+PLUS(105,95)+A(145,95,'R')+B(157,95,179,95)+A(191,95,'L')+
+  AR('M 54 64 Q 100 14 143 78')+AR('M 168 91 Q 176 52 191 76')+
+  NOTE(215,24,[225,32,200,70],'Leaving group','start')+
+  RX(250,330,95)+
+  A(385,95,'Nu')+B(401,95,425,95)+A(437,95,'R')+PLUS(480,95)+A(520,95,'L')+LP(520,72)+CH(538,80,'-')+
+  LBL(50,145,'Nucleophile')+LBL(168,145,'Substrate')+T(168,163,'(Electrophile)',{s:14,w:700}));
+
+D.coord=()=>svg(600,180,
+  A(55,95,'B')+LP(55,72)+CH(73,80,'-')+PLUS(108,95)+
+  A(165,95,'A')+CH(183,80,'+')+B(165,83,165,55)+B(156,103,136,120)+B(174,103,194,120)+
+  AR('M 58 64 Q 105 18 158 80')+RX(255,335,95)+
+  A(385,95,'B')+B(397,95,420,95)+A(432,95,'A')+B(432,83,432,55)+B(423,103,403,120)+B(441,103,461,120)+
+  LBL(55,148,'Lewis base')+T(55,165,'(Nucleophile)',{s:14,w:700})+
+  LBL(170,148,'Lewis acid')+T(170,165,'(Electrophile)',{s:14,w:700})+
+  LBL(432,148,'Lewis adduct'));
+
+D.heter=()=>svg(600,175,
+  A(120,95,'R')+B(132,95,154,95)+A(166,95,'L')+
+  AR('M 143 91 Q 148 54 166 76')+NOTE(250,30,[245,38,176,72],'Leaving group','start')+
+  RX(235,315,95)+
+  A(380,95,'R')+CH(397,80,'+')+PLUS(440,95)+A(480,95,'L')+LP(480,72)+CH(498,80,'-')+
+  LBL(143,145,'Substrate'));
+
+D.nucadd=()=>svg(600,180,
+  A(55,100,'Nu')+LP(55,77)+CH(77,85,'-')+PLUS(112,100)+
+  A(200,100,'C')+DBv(200,88,62)+A(200,48,'Z')+B(190,108,170,125)+B(210,108,230,125)+T(226,86,'δ+',{s:14,c:TEAL,w:700})+
+  AR('M 58 70 Q 110 24 190 92')+AR('M 207 80 Q 226 64 212 50')+
+  NOTE(285,24,[280,32,208,66],'Polar π bond','start')+
+  RX(285,355,100)+
+  A(470,48,'Z')+LP(470,25)+CH(488,33,'-')+B(470,61,470,88)+A(470,100,'C')+A(405,100,'Nu')+B(421,100,458,100)+B(481,108,501,125)+B(479,93,499,78)+
+  LBL(55,152,'Nucleophile')+LBL(200,152,'Electrophile'));
+
+D.nucelim=()=>svg(600,180,
+  A(190,48,'Z')+LP(190,25)+CH(208,33,'-')+B(190,61,190,88)+A(190,100,'C')+B(180,108,160,125)+B(198,92,218,78)+B(200,108,222,122)+A(236,132,'L')+
+  AR('M 185 22 Q 148 58 187 78')+AR('M 210 112 Q 240 102 238 122')+
+  NOTE(310,160,[305,154,248,138],'Leaving group','start')+
+  RX(285,355,100)+
+  A(440,48,'Z')+DBv(440,62,88)+A(440,100,'C')+B(430,108,410,125)+B(450,108,470,125)+PLUS(505,100)+A(548,100,'L')+LP(548,77)+CH(566,85,'-')+
+  NOTE(500,24,[490,32,448,64],'Polar π bond','start'));
+
+D.e2=()=>svg(600,275,
+  A(45,75,'B')+LP(45,52)+CH(63,60,'-')+PLUS(92,75)+
+  A(125,75,'H')+B(138,75,158,75)+A(170,75,'C')+B(182,75,208,75)+A(220,75,'C')+B(232,75,254,75)+A(266,75,'L')+
+  B(170,63,170,38)+B(170,87,170,112)+B(220,63,220,38)+B(220,87,220,112)+
+  T(170,130,'β',{s:15,c:BLUE,w:700})+T(220,130,'α',{s:15,c:BLUE,w:700})+
+  AR('M 48 46 Q 90 4 124 62')+AR('M 147 68 Q 168 30 192 68')+AR('M 243 68 Q 258 38 266 60')+
+  NOTE(335,24,[330,30,274,58],'Leaving group','start')+
+  `<path d="M 315 75 H 350 V 178" fill="none" stroke="${INK}" stroke-width="2.2" marker-end="url(#ahK)"/>`+
+  LBL(45,152,'Base')+LBL(195,152,'Substrate')+
+  A(45,225,'B')+B(57,225,80,225)+A(92,225,'H')+PLUS(137,225)+
+  A(185,225,'C')+DBh(197,223,225)+A(235,225,'C')+B(185,213,185,188)+B(185,237,185,262)+B(235,213,235,188)+B(235,237,235,262)+
+  PLUS(290,225)+A(330,225,'L')+LP(330,202)+CH(348,210,'-')+
+  NOTE(210,172,[210,178,210,218],'New π bond'));
+
+D.eladd=()=>svg(600,180,
+  A(100,95,'C')+DBh(112,138,95)+A(150,95,'C')+B(92,86,74,68)+B(92,104,74,122)+B(158,86,176,68)+B(158,104,176,122)+
+  PLUS(210,95)+A(255,95,'E')+CH(272,80,'+')+
+  AR('M 125 88 Q 190 8 250 78')+NOTE(40,26,[85,34,118,84],'Nonpolar π bond','start')+
+  RX(315,385,95)+
+  A(430,95,'C')+CH(446,80,'+')+B(422,86,404,68)+B(422,104,404,122)+B(442,95,468,95)+A(480,95,'C')+B(480,83,480,60)+B(480,107,480,130)+B(492,95,514,95)+A(526,95,'E')+
+  LBL(125,152,'Nucleophile')+LBL(255,152,'Electrophile'));
+
+D.elelim=()=>svg(600,175,
+  A(120,95,'C')+CH(136,80,'+')+B(112,86,94,68)+B(112,104,94,122)+B(132,95,158,95)+A(170,95,'C')+B(170,83,170,60)+B(170,107,170,130)+B(182,95,204,95)+A(216,95,'E')+
+  AR('M 193 90 Q 164 40 143 84')+
+  RX(265,335,95)+
+  A(385,95,'C')+B(377,86,359,68)+B(377,104,359,122)+DBh(397,423,95)+A(435,95,'C')+B(443,86,461,68)+B(443,104,461,122)+
+  PLUS(495,95)+A(535,95,'E')+CH(552,80,'+')+
+  NOTE(410,28,[410,36,410,84],'Nonpolar π bond'));
+
+const rearr=(cy,X,label)=>
+  `<rect x="14" y="${cy-20}" width="142" height="40" rx="6" fill="#cdeaf6"/>`+T(85,cy+5,label,{s:15})+
+  A(235,cy,'C')+CH(251,cy-15,'+')+B(227,cy-9,211,cy-25)+B(227,cy+9,211,cy+25)+B(247,cy,271,cy)+
+  A(283,cy,'C')+B(283,cy-12,283,cy-27)+A(283,cy-40,X,BLUE)+B(283,cy+12,283,cy+34)+B(293,cy+7,311,cy+23)+
+  AR(`M 281 ${cy-31} Q 262 ${cy-56} 240 ${cy-10}`)+
+  RX(345,405,cy)+
+  A(455,cy,'C')+B(447,cy-9,431,cy-25)+B(447,cy+9,431,cy+25)+B(455,cy-12,455,cy-27)+A(455,cy-40,X,BLUE)+B(467,cy,493,cy)+
+  A(505,cy,'C')+CH(521,cy-15,'+')+B(505,cy+12,505,cy+34)+B(515,cy+7,533,cy+23);
+D.rearr=()=>svg(600,255,rearr(80,'H','1,2-Hydride shift')+rearr(190,'R','1,2-Alkyl shift'));
+
+/* ---------- Card data ---------- */
+const STEPS=[
+ {n:1,name:'Proton Transfer',d:'proton',
+  desc:'A <b>base</b> uses a lone pair to pull an H⁺ off an <b>acid</b>. The H–A bond breaks and its electrons stay on A, giving the conjugate base :A⁻. A new B–H bond forms.',
+  key:'Bond formed: B–H · Bond broken: H–A. Same arrows as every acid–base reaction.'},
+ {n:2,name:'Bimolecular Nucleophilic Substitution (SN2)',short:'SN2',d:'sn2',
+  desc:'A <b>nucleophile</b> attacks an electrophilic carbon with its lone pair while the <b>leaving group</b> leaves, all in <b>one concerted step</b> (backside attack, so the stereocenter inverts). Rate depends on both Nu and the substrate (bimolecular).',
+  key:'Nu–R bond forms as R–L breaks, at the same time. Needs a good leaving group; best on methyl and primary carbons.'},
+ {n:3,name:'Coordination',d:'coord',
+  desc:'A <b>Lewis base</b> (nucleophile) donates a lone pair to an electron-poor <b>Lewis acid</b> (electrophile with an empty orbital), forming a new bond. The product is a <b>Lewis adduct</b>.',
+  key:'Only bond formation, no bond breaks. Example: a nucleophile attacking a carbocation. It is the reverse of heterolysis.'},
+ {n:4,name:'Heterolysis',d:'heter',
+  desc:'A bond to a <b>leaving group</b> breaks unevenly: both bonding electrons go onto the leaving group. This makes a <b>carbocation</b> R⁺ and the anion :L⁻.',
+  key:'Only bond breaking. The reverse of coordination. This is the slow first step of SN1 and E1.'},
+ {n:5,name:'Nucleophilic Addition',d:'nucadd',
+  desc:'A <b>nucleophile</b> attacks the electrophilic atom (δ+) of a <b>polar π bond</b> such as C=O. The π electrons move onto the more electronegative atom Z, which becomes an anion.',
+  key:'The π bond is lost (becomes σ). Nu–C forms, and the carbon changes from trigonal planar to tetrahedral.'},
+ {n:6,name:'Nucleophile Elimination',d:'nucelim',
+  desc:'A lone pair on Z pushes back down to re-form the <b>polar π bond</b> (C=Z) while a <b>leaving group</b> departs from the carbon. The carbon goes from tetrahedral back to trigonal planar.',
+  key:'The reverse of nucleophilic addition. Pairs with it in carbonyl substitution (add, then eliminate).'},
+ {n:7,name:'Bimolecular Elimination (E2)',short:'E2',d:'e2',
+  desc:'A <b>base</b> removes a β-hydrogen while the <b>leaving group</b> leaves the α-carbon, all in <b>one concerted step</b>. A new C=C π bond forms between the α and β carbons.',
+  key:'Three arrows: base→H, C–H bond→new π bond, C–L bond→L. The H and L are anti-periplanar. Rate depends on base and substrate.'},
+ {n:8,name:'Electrophilic Addition',d:'eladd',
+  desc:'A nucleophilic <b>nonpolar π bond</b> (C=C) attacks an <b>electrophile</b> (E⁺). A new C–E σ bond forms and the other carbon is left as a <b>carbocation</b>.',
+  key:'The π bond acts as the nucleophile. Example: HBr adding to an alkene (H⁺ is the electrophile).'},
+ {n:9,name:'Electrophile Elimination',d:'elelim',
+  desc:'The electrons in a C–E bond move to form a <b>nonpolar π bond</b> with the adjacent <b>carbocation</b>, and E leaves as E⁺ (often a proton).',
+  key:'The reverse of electrophilic addition. This is the second step of E1: lose H⁺ next to a carbocation to make an alkene.'},
+ {n:10,name:'Carbocation Rearrangements',d:'rearr',
+  desc:'A neighboring <b>H (1,2-hydride shift)</b> or <b>alkyl group (1,2-alkyl shift)</b> moves with its bonding pair of electrons to the adjacent carbocation. The positive charge moves to the neighboring carbon.',
+  key:'Usually happens when it gives a more stable carbocation (e.g. secondary → tertiary).'}
+];
+STEPS.forEach(s=>s.svg=D[s.d]());
+
+/* ---------- State ---------- */
+const $=id=>document.getElementById(id);
+let order=STEPS.map((_,i)=>i), idx=0, dir='name', flipped=false;
+
+/* ---------- Flashcards ---------- */
+function frontHTML(s){
+  return dir==='name'
+   ? `<div class="scroll"><div class="center"><div class="num">Step ${s.n} of 10</div><div class="big">${s.name}</div><div class="hint">Tap the card to flip</div></div></div>`
+   : `<div class="scroll"><div class="num">Which elementary step is this?</div><div class="center" style="width:100%;display:flex;flex-direction:column;align-items:center"><div class="draw">${s.svg}</div><div class="hint">Tap the card to flip</div></div></div>`;
+}
+function backHTML(s){
+  return dir==='name'
+   ? `<div class="scroll"><div class="num">${s.short?s.short+' · ':''}Step ${s.n}</div><div class="draw" style="margin-top:8px">${s.svg}</div><div class="desc"><p>${s.desc}</p><div class="key">${s.key}</div></div></div>`
+   : `<div class="scroll"><div class="num">Step ${s.n}</div><div class="name-sm">${s.name}</div><div class="desc"><p>${s.desc}</p><div class="key">${s.key}</div></div></div>`;
+}
+function render(animateBack){
+  const s=STEPS[order[idx]];
+  const paint=()=>{
+    $('front').innerHTML=frontHTML(s); $('back').innerHTML=backHTML(s);
+    $('count').textContent=`${idx+1} / ${STEPS.length}`;
+    $('dots').innerHTML=order.map((_,i)=>`<i class="${i===idx?'cur':''}"></i>`).join('');
+    $('prev').disabled=idx===0; $('next').disabled=idx===STEPS.length-1;
+  };
+  if(animateBack&&flipped){ setFlip(false); setTimeout(paint,260); } else paint();
+}
+function setFlip(v){flipped=v;$('card').classList.toggle('flipped',v);$('flip').textContent=v?'Flip back':'Flip';}
+function go(d){const n=idx+d; if(n<0||n>=STEPS.length)return; idx=n; render(true);}
+$('card').addEventListener('click',()=>setFlip(!flipped));
+$('flip').addEventListener('click',()=>setFlip(!flipped));
+$('prev').addEventListener('click',()=>go(-1));
+$('next').addEventListener('click',()=>go(1));
+$('shuffleBtn').addEventListener('click',()=>{
+  const sh=[...order]; for(let i=sh.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[sh[i],sh[j]]=[sh[j],sh[i]];}
+  order=sh; idx=0; render(true);
+});
+$('dirSeg').addEventListener('click',e=>{
+  const b=e.target.closest('button'); if(!b)return; dir=b.dataset.dir;
+  [...$('dirSeg').children].forEach(x=>x.classList.toggle('on',x===b));
+  setFlip(false); render(false);
+});
+document.addEventListener('keydown',e=>{
+  if($('study').classList.contains('hidden'))return;
+  if(e.key==='ArrowRight')go(1); else if(e.key==='ArrowLeft')go(-1); else if(e.key===' '){e.preventDefault();setFlip(!flipped);}
+});
+/* swipe */
+let tx=null,ty=null;
+$('card').addEventListener('touchstart',e=>{tx=e.touches[0].clientX;ty=e.touches[0].clientY;},{passive:true});
+$('card').addEventListener('touchend',e=>{
+  if(tx===null)return; const dx=e.changedTouches[0].clientX-tx, dy=e.changedTouches[0].clientY-ty; tx=null;
+  if(Math.abs(dx)>70&&Math.abs(dx)>Math.abs(dy)*1.5){ e.preventDefault(); go(dx<0?1:-1); }
+});
+
+/* ---------- Quiz ---------- */
+let Q=[], qi=0, score=0, missed=[], answered=false;
+const shuffle=a=>{a=[...a];for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;};
+function startQuiz(list){
+  Q=shuffle(list).map(s=>({s,type:Math.random()<.5?'draw':'desc',opts:shuffle([s,...shuffle(STEPS.filter(x=>x!==s)).slice(0,3)])}));
+  qi=0;score=0;missed=[];renderQ();
+}
+function renderQ(){
+  const body=$('qbody');
+  if(qi>=Q.length){
+    $('qcount').textContent='Done'; $('qscore').textContent=`${score} / ${Q.length}`;
+    body.innerHTML=`<div class="center-col"><div class="num">Quiz complete</div><div class="score">${score} / ${Q.length}</div>
+      ${missed.length?`<div style="font-weight:700">Review these:</div><ul class="missed">${missed.map(m=>`<li>${m.n}. ${m.name}</li>`).join('')}</ul>`:'<div style="font-size:20px">Perfect score! 🎉</div>'}
+      <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center">
+        ${missed.length?'<button class="btn primary" id="retryMissed">Retry missed</button>':''}
+        <button class="btn ${missed.length?'':'primary'}" id="restartQ">New quiz (all 10)</button>
+        <button class="btn" id="toCards">Back to flashcards</button></div></div>`;
+    if(missed.length)$('retryMissed').onclick=()=>startQuiz(missed);
+    $('restartQ').onclick=()=>startQuiz(STEPS);
+    $('toCards').onclick=()=>setMode('study');
+    return;
+  }
+  const q=Q[qi]; answered=false;
+  $('qcount').textContent=`Question ${qi+1} / ${Q.length}`; $('qscore').textContent=`Score: ${score}`;
+  const prompt=q.type==='draw'
+    ?`<div class="qprompt">Which elementary step is shown?</div><div class="draw" style="margin:0 auto">${q.s.svg}</div>`
+    :`<div class="qprompt">Which elementary step is described?</div><div class="qdesc">${q.s.desc.replace(/\(SN2\)|\(E2\)/g,'')}</div>`;
+  body.innerHTML=prompt+`<div class="opts">${q.opts.map((o,i)=>`<button class="opt" data-i="${i}">${o.name}</button>`).join('')}</div><div id="fb"></div>`;
+  body.querySelectorAll('.opt').forEach(b=>b.addEventListener('click',()=>answer(+b.dataset.i)));
+}
+function answer(i){
+  if(answered)return; answered=true;
+  const q=Q[qi], ok=q.opts[i]===q.s;
+  document.querySelectorAll('.opt').forEach((b,k)=>{b.disabled=true; if(q.opts[k]===q.s)b.classList.add('good'); else if(k===i)b.classList.add('bad');});
+  if(ok)score++; else if(!missed.includes(q.s))missed.push(q.s);
+  $('qscore').textContent=`Score: ${score}`;
+  $('fb').innerHTML=`<div class="explain"><b>${ok?'Correct!':'Not quite.'}</b> ${q.type==='draw'?`This is <b>${q.s.name}</b>. ${q.s.desc}`:q.s.key}</div>
+    <div style="margin-top:12px"><button class="btn primary" style="width:100%" id="nextQ">${qi===Q.length-1?'See results':'Next question →'}</button></div>`;
+  $('nextQ').onclick=()=>{qi++;renderQ();window.scrollTo({top:0});};
+  $('fb').scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+/* ---------- Mode switch ---------- */
+function setMode(m){
+  [...$('modeSeg').children].forEach(x=>x.classList.toggle('on',x.dataset.mode===m));
+  $('study').classList.toggle('hidden',m!=='study'); $('quiz').classList.toggle('hidden',m!=='quiz');
+  if(m==='quiz')startQuiz(STEPS);
+}
+$('modeSeg').addEventListener('click',e=>{const b=e.target.closest('button'); if(b)setMode(b.dataset.mode);});
+
+render(false);
+</script>
+</body>
+</html>
