@@ -73,6 +73,27 @@ h1{font-size:22px;margin:0;letter-spacing:-.01em}
 .missed{margin:10px auto;max-width:520px;padding-left:20px;font-size:18px;line-height:1.7}
 .center-col{display:flex;flex-direction:column;align-items:center;gap:12px}
 .hidden{display:none!important}
+
+/* practice reactions */
+.opt[disabled],.slot[disabled]{opacity:1;color:var(--ink);-webkit-text-fill-color:currentColor}
+.rt{font-size:22px;font-weight:800;text-align:center;margin:4px 0;text-wrap:balance}
+.rsub{color:var(--muted);text-align:center;font-size:16px;margin:2px 0 8px}
+.eq{font-size:clamp(18px,3.2vw,26px);text-align:center;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:16px 14px;margin:10px 0;overflow-x:auto;line-height:1.5}
+.slots{display:flex;flex-direction:column;gap:8px;margin:14px 0}
+.slot{display:flex;gap:12px;align-items:center;border:2px dashed var(--line);background:transparent;color:var(--muted);font-weight:600;font-size:17px;font-family:inherit;min-height:56px;border-radius:12px;padding:10px 14px;text-align:left;cursor:pointer;width:100%}
+.slot.filled{border-style:solid;border-color:var(--accent);color:var(--ink);font-weight:700;background:var(--panel)}
+.slot.good{border-color:var(--good);background:var(--good-bg);color:var(--ink)}
+.slot.bad{border-color:var(--bad);background:var(--bad-bg);color:var(--ink)}
+.sn{flex:none;width:28px;height:28px;border-radius:50%;background:var(--line);color:var(--ink);display:inline-flex;align-items:center;justify-content:center;font-size:15px;font-weight:800}
+.bank{display:flex;flex-wrap:wrap;gap:10px;margin:8px 0 14px}
+.chip{border:2px solid var(--line);background:var(--panel);color:var(--ink);font-weight:700;font-size:17px;font-family:inherit;border-radius:999px;padding:12px 18px;min-height:50px;cursor:pointer}
+.chip[disabled]{opacity:.3;cursor:default}
+.answer-row{display:flex;gap:10px;flex-wrap:wrap}
+.answer-row .btn{flex:1;min-width:140px}
+.review{margin-top:16px;display:flex;flex-direction:column;gap:10px}
+.review .st{background:var(--bg);border-radius:12px;padding:12px 14px;font-size:16px;line-height:1.45}
+.review .st b{display:block;font-size:17px}
+.review .st .eq{margin:8px 0;font-size:clamp(16px,2.6vw,21px);padding:10px}
 </style>
 </head>
 <body>
@@ -91,6 +112,7 @@ h1{font-size:22px;margin:0;letter-spacing:-.01em}
     <div class="seg" id="modeSeg">
       <button data-mode="study" class="on">Flashcards</button>
       <button data-mode="quiz">Quiz</button>
+      <button data-mode="practice">Practice</button>
     </div>
   </header>
 
@@ -125,6 +147,18 @@ h1{font-size:22px;margin:0;letter-spacing:-.01em}
       <span class="count" id="qscore"></span>
     </div>
     <div class="qcard" id="qbody"></div>
+  </section>
+
+  <!-- PRACTICE REACTIONS -->
+  <section id="practice" class="hidden">
+    <div class="bar">
+      <div class="seg" id="pracSeg">
+        <button data-p="order" class="on">Order the steps</button>
+        <button data-p="name">Name the step</button>
+      </div>
+      <div style="display:flex;gap:14px;flex-wrap:wrap"><span class="count" id="pcount"></span><span class="count" id="pscore"></span></div>
+    </div>
+    <div class="qcard" id="pbody"></div>
   </section>
 </div>
 
@@ -324,55 +358,181 @@ $('card').addEventListener('touchend',e=>{
   if(Math.abs(dx)>70&&Math.abs(dx)>Math.abs(dy)*1.5){ e.preventDefault(); go(dx<0?1:-1); }
 });
 
-/* ---------- Quiz ---------- */
-let Q=[], qi=0, score=0, missed=[], answered=false;
+/* ---------- Practice reaction data ---------- */
+/* s = elementary step number (1-10) as listed in the flashcards */
+const REACTIONS=[
+ {title:'Methyl bromide + ammonia',cond:'CH₃Br + 2 NH₃ → CH₃NH₂ + NH₄⁺ Br⁻',steps:[
+  {s:2,eq:'NH₃ + CH₃–Br → CH₃–NH₃⁺ + Br⁻',why:'The lone pair on N attacks the methyl carbon while Br⁻ leaves, all in one step.'},
+  {s:1,eq:'CH₃–NH₃⁺ + NH₃ → CH₃–NH₂ + NH₄⁺',why:'A second NH₃ acts as a base and removes H⁺ from the ammonium ion.'}]},
+ {title:'Ethanol + HBr',cond:'CH₃CH₂OH + HBr → CH₃CH₂Br + H₂O',steps:[
+  {s:1,eq:'CH₃CH₂–OH + H–Br → CH₃CH₂–OH₂⁺ + Br⁻',why:'OH⁻ is a poor leaving group. Protonating it makes H₂O, a good one.'},
+  {s:2,eq:'Br⁻ + CH₃CH₂–OH₂⁺ → CH₃CH₂–Br + H₂O',why:'Primary carbon, so Br⁻ attacks from the back as water leaves, in one step.'}]},
+ {title:'Williamson ether synthesis',cond:'CH₃CH₂OH, NaH; then CH₃I → CH₃CH₂OCH₃',steps:[
+  {s:1,eq:'CH₃CH₂–OH + H⁻ → CH₃CH₂–O⁻ + H₂',why:'Hydride is a strong base. It takes H⁺ from the alcohol to make the alkoxide nucleophile.'},
+  {s:2,eq:'CH₃CH₂–O⁻ + CH₃–I → CH₃CH₂–O–CH₃ + I⁻',why:'The alkoxide attacks the methyl carbon while iodide leaves, in one step.'}]},
+ {title:'tert-Butyl bromide in water',cond:'(CH₃)₃CBr + H₂O → (CH₃)₃COH + HBr',steps:[
+  {s:4,eq:'(CH₃)₃C–Br → (CH₃)₃C⁺ + Br⁻',why:'The tertiary C–Br bond breaks unevenly and makes a stable tertiary carbocation. This is the slow step.'},
+  {s:3,eq:'(CH₃)₃C⁺ + H₂O → (CH₃)₃C–OH₂⁺',why:'A lone pair on water bonds to the carbocation.'},
+  {s:1,eq:'(CH₃)₃C–OH₂⁺ + H₂O → (CH₃)₃C–OH + H₃O⁺',why:'A second water molecule removes H⁺ from the oxonium ion.'}]},
+ {title:'tert-Butyl alcohol + HCl',cond:'(CH₃)₃COH + HCl → (CH₃)₃CCl + H₂O',steps:[
+  {s:1,eq:'(CH₃)₃C–OH + H–Cl → (CH₃)₃C–OH₂⁺ + Cl⁻',why:'Protonation turns the poor leaving group OH into H₂O.'},
+  {s:4,eq:'(CH₃)₃C–OH₂⁺ → (CH₃)₃C⁺ + H₂O',why:'Water leaves with both bonding electrons, making the tertiary carbocation.'},
+  {s:3,eq:'(CH₃)₃C⁺ + Cl⁻ → (CH₃)₃C–Cl',why:'Chloride donates a lone pair to the carbocation (Lewis base + Lewis acid).'}]},
+ {title:'3-Methyl-2-butanol + HBr',cond:'(CH₃)₂CHCH(OH)CH₃ + HBr → (CH₃)₂C(Br)CH₂CH₃',steps:[
+  {s:1,eq:'(CH₃)₂CH–CH(OH)–CH₃ + H–Br → (CH₃)₂CH–CH(OH₂⁺)–CH₃ + Br⁻',why:'Protonate the OH so it can leave as water.'},
+  {s:4,eq:'(CH₃)₂CH–CH(OH₂⁺)–CH₃ → (CH₃)₂CH–CH⁺–CH₃ + H₂O',why:'Water leaves and a secondary carbocation forms.'},
+  {s:10,eq:'(CH₃)₂CH–CH⁺–CH₃ → (CH₃)₂C⁺–CH₂–CH₃',why:'A 1,2-hydride shift moves the cation from secondary to the more stable tertiary carbon.'},
+  {s:3,eq:'(CH₃)₂C⁺–CH₂CH₃ + Br⁻ → (CH₃)₂C(Br)–CH₂CH₃',why:'Bromide bonds to the tertiary carbocation. The Br ends up on the rearranged carbon.'}]},
+ {title:'2-Bromobutane + sodium ethoxide',cond:'CH₃CH(Br)CH₂CH₃ + CH₃CH₂O⁻, heat → 2-butene (major)',steps:[
+  {s:7,eq:'CH₃CH₂O⁻ + CH₃CH(Br)CH₂CH₃ → CH₃CH₂OH + CH₃CH=CHCH₃ + Br⁻',why:'A strong base removes a β-hydrogen as Br⁻ leaves, forming the C=C in one concerted step.'}]},
+ {title:'Ethanol + H₂SO₄ (170 °C)',cond:'CH₃CH₂OH → CH₂=CH₂ + H₂O',steps:[
+  {s:1,eq:'CH₃CH₂–OH + H₂SO₄ → CH₃CH₂–OH₂⁺ + HSO₄⁻',why:'Protonate the OH to make a good leaving group.'},
+  {s:7,eq:'HSO₄⁻ + CH₃CH₂–OH₂⁺ → H₂SO₄ + CH₂=CH₂ + H₂O',why:'A primary substrate cannot form a stable carbocation. The base removes a β-H as water leaves, in one concerted step.'}]},
+ {title:'Cyclohexanol + H₃PO₄, heat',cond:'C₆H₁₁OH → C₆H₁₀ + H₂O',steps:[
+  {s:1,eq:'C₆H₁₁–OH + H₃PO₄ → C₆H₁₁–OH₂⁺ + H₂PO₄⁻',why:'Protonate the OH to make a good leaving group.'},
+  {s:4,eq:'C₆H₁₁–OH₂⁺ → C₆H₁₁⁺ + H₂O',why:'Water leaves and a secondary carbocation forms.'},
+  {s:9,eq:'C₆H₁₁⁺ → C₆H₁₀ + H⁺',why:'The C–H bond next to the cation becomes the new π bond and H leaves as H⁺.'},
+  {s:1,eq:'H⁺ + H₂O → H₃O⁺',why:'The released proton is taken up by a base (here water). Check how your course counts this last step.'}]},
+ {title:'tert-Butyl bromide in hot ethanol (E1)',cond:'(CH₃)₃CBr → (CH₃)₂C=CH₂ + HBr',steps:[
+  {s:4,eq:'(CH₃)₃C–Br → (CH₃)₃C⁺ + Br⁻',why:'The tertiary C–Br bond breaks to give the carbocation. Same slow first step as SN1.'},
+  {s:9,eq:'(CH₃)₃C⁺ → (CH₃)₂C=CH₂ + H⁺',why:'A C–H bond next to the cation becomes the π bond and H leaves as H⁺.'},
+  {s:1,eq:'H⁺ + CH₃CH₂OH → CH₃CH₂OH₂⁺',why:'The solvent takes up the proton. Check how your course counts this last step.'}]}
+];
+const stepLabel=n=>STEPS[n-1].short||STEPS[n-1].name;
+
+/* ---------- Generic multiple-choice runner ---------- */
 const shuffle=a=>{a=[...a];for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;};
-function startQuiz(list){
-  Q=shuffle(list).map(s=>({s,type:Math.random()<.5?'draw':'desc',opts:shuffle([s,...shuffle(STEPS.filter(x=>x!==s)).slice(0,3)])}));
-  qi=0;score=0;missed=[];renderQ();
-}
-function renderQ(){
-  const body=$('qbody');
-  if(qi>=Q.length){
-    $('qcount').textContent='Done'; $('qscore').textContent=`${score} / ${Q.length}`;
-    body.innerHTML=`<div class="center-col"><div class="num">Quiz complete</div><div class="score">${score} / ${Q.length}</div>
-      ${missed.length?`<div style="font-weight:700">Review these:</div><ul class="missed">${missed.map(m=>`<li>${m.n}. ${m.name}</li>`).join('')}</ul>`:'<div style="font-size:20px">Perfect score! 🎉</div>'}
-      <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center">
-        ${missed.length?'<button class="btn primary" id="retryMissed">Retry missed</button>':''}
-        <button class="btn ${missed.length?'':'primary'}" id="restartQ">New quiz (all 10)</button>
-        <button class="btn" id="toCards">Back to flashcards</button></div></div>`;
-    if(missed.length)$('retryMissed').onclick=()=>startQuiz(missed);
-    $('restartQ').onclick=()=>startQuiz(STEPS);
-    $('toCards').onclick=()=>setMode('study');
-    return;
+const choices=s=>shuffle([s,...shuffle(STEPS.filter(x=>x!==s)).slice(0,3)]);
+function runSet(o){
+  const body=o.body, qs=o.qs; let qi=0,score=0,missed=[],answered=false;
+  function render(){
+    if(qi>=qs.length){
+      o.count.textContent='Done'; o.score.textContent=`${score} / ${qs.length}`;
+      body.innerHTML=`<div class="center-col"><div class="num">${o.doneTitle||'Quiz complete'}</div><div class="score">${score} / ${qs.length}</div>
+        ${missed.length?`<div style="font-weight:700">Review these:</div><ul class="missed">${missed.map(m=>`<li>${m.label}</li>`).join('')}</ul>`:'<div style="font-size:20px">Perfect score! 🎉</div>'}
+        <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center">
+          ${missed.length?'<button class="btn primary" id="retryMissed">Retry missed</button>':''}
+          <button class="btn ${missed.length?'':'primary'}" id="restartQ">New set</button>
+          <button class="btn" id="toCards">Back to flashcards</button></div></div>`;
+      if(missed.length)body.querySelector('#retryMissed').onclick=()=>runSet({...o,qs:shuffle(missed)});
+      body.querySelector('#restartQ').onclick=()=>runSet({...o,qs:o.again()});
+      body.querySelector('#toCards').onclick=()=>setMode('study');
+      return;
+    }
+    const q=qs[qi]; answered=false;
+    o.count.textContent=`Question ${qi+1} / ${qs.length}`; o.score.textContent=`Score: ${score}`;
+    body.innerHTML=q.prompt+`<div class="opts">${q.opts.map((t,i)=>`<button class="opt" data-i="${i}">${t}</button>`).join('')}</div><div id="fb"></div>`;
+    body.querySelectorAll('.opt').forEach(b=>b.addEventListener('click',()=>answer(+b.dataset.i)));
   }
-  const q=Q[qi]; answered=false;
-  $('qcount').textContent=`Question ${qi+1} / ${Q.length}`; $('qscore').textContent=`Score: ${score}`;
-  const prompt=q.type==='draw'
-    ?`<div class="qprompt">Which elementary step is shown?</div><div class="draw" style="margin:0 auto">${q.s.svg}</div>`
-    :`<div class="qprompt">Which elementary step is described?</div><div class="qdesc">${q.s.desc.replace(/\(SN2\)|\(E2\)/g,'')}</div>`;
-  body.innerHTML=prompt+`<div class="opts">${q.opts.map((o,i)=>`<button class="opt" data-i="${i}">${o.name}</button>`).join('')}</div><div id="fb"></div>`;
-  body.querySelectorAll('.opt').forEach(b=>b.addEventListener('click',()=>answer(+b.dataset.i)));
+  function answer(i){
+    if(answered)return; answered=true;
+    const q=qs[qi], ok=i===q.ans;
+    body.querySelectorAll('.opt').forEach((b,k)=>{b.disabled=true; if(k===q.ans)b.classList.add('good'); else if(k===i)b.classList.add('bad');});
+    if(ok)score++; else missed.push(q);
+    o.score.textContent=`Score: ${score}`;
+    body.querySelector('#fb').innerHTML=`<div class="explain"><b>${ok?'Correct!':'Not quite.'}</b> ${q.explain}</div>
+      <div style="margin-top:12px"><button class="btn primary" style="width:100%" id="nextQ">${qi===qs.length-1?'See results':'Next question →'}</button></div>`;
+    body.querySelector('#nextQ').onclick=()=>{qi++;render();window.scrollTo({top:0});};
+    body.querySelector('#fb').scrollIntoView({behavior:'smooth',block:'nearest'});
+  }
+  render();
 }
-function answer(i){
-  if(answered)return; answered=true;
-  const q=Q[qi], ok=q.opts[i]===q.s;
-  document.querySelectorAll('.opt').forEach((b,k)=>{b.disabled=true; if(q.opts[k]===q.s)b.classList.add('good'); else if(k===i)b.classList.add('bad');});
-  if(ok)score++; else if(!missed.includes(q.s))missed.push(q.s);
-  $('qscore').textContent=`Score: ${score}`;
-  $('fb').innerHTML=`<div class="explain"><b>${ok?'Correct!':'Not quite.'}</b> ${q.type==='draw'?`This is <b>${q.s.name}</b>. ${q.s.desc}`:q.s.key}</div>
-    <div style="margin-top:12px"><button class="btn primary" style="width:100%" id="nextQ">${qi===Q.length-1?'See results':'Next question →'}</button></div>`;
-  $('nextQ').onclick=()=>{qi++;renderQ();window.scrollTo({top:0});};
-  $('fb').scrollIntoView({behavior:'smooth',block:'nearest'});
+
+/* ---------- Quiz (the 10 steps) ---------- */
+const makeStepQs=()=>shuffle(STEPS).map(s=>{
+  const draw=Math.random()<.5, opts=choices(s);
+  return {
+    prompt:draw?`<div class="qprompt">Which elementary step is shown?</div><div class="draw" style="margin:0 auto">${s.svg}</div>`
+              :`<div class="qprompt">Which elementary step is described?</div><div class="qdesc">${s.desc.replace(/\(SN2\)|\(E2\)/g,'')}</div>`,
+    opts:opts.map(o=>o.name), ans:opts.indexOf(s),
+    explain:draw?`This is <b>${s.name}</b>. ${s.desc}`:s.key, label:`${s.n}. ${s.name}`};
+});
+const startQuiz=()=>runSet({body:$('qbody'),count:$('qcount'),score:$('qscore'),qs:makeStepQs(),again:makeStepQs});
+
+/* ---------- Practice: name the step ---------- */
+const makeNameQs=()=>{
+  const all=[]; REACTIONS.forEach(r=>r.steps.forEach((st,i)=>all.push({r,st,i})));
+  return shuffle(all).slice(0,10).map(({r,st,i})=>{
+    const s=STEPS[st.s-1], opts=choices(s);
+    return {prompt:`<div class="qprompt">Which elementary step is this?</div><div class="rt">${r.title}</div><div class="rsub">${r.cond}</div><div class="eq">${st.eq}</div><div class="rsub">Step ${i+1} of ${r.steps.length} in this reaction</div>`,
+      opts:opts.map(o=>o.name), ans:opts.indexOf(s), explain:`<b>${s.name}.</b> ${st.why}`, label:`${s.name} (${r.title})`};
+  });
+};
+const startName=()=>runSet({body:$('pbody'),count:$('pcount'),score:$('pscore'),qs:makeNameQs(),again:makeNameQs,doneTitle:'Practice complete'});
+
+/* ---------- Practice: order the steps ---------- */
+function startOrder(listIn){
+  const list=listIn||shuffle(REACTIONS.filter(r=>r.steps.length>1));
+  let i=0,score=0,missed=[]; const body=$('pbody');
+  function show(){
+    if(i>=list.length){
+      $('pcount').textContent='Done'; $('pscore').textContent=`${score} / ${list.length}`;
+      body.innerHTML=`<div class="center-col"><div class="num">Practice complete</div><div class="score">${score} / ${list.length}</div>
+        ${missed.length?`<div style="font-weight:700">Review these:</div><ul class="missed">${missed.map(m=>`<li>${m.title}</li>`).join('')}</ul>`:'<div style="font-size:20px">Perfect score! 🎉</div>'}
+        <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center">
+          ${missed.length?'<button class="btn primary" id="rm">Retry missed</button>':''}
+          <button class="btn ${missed.length?'':'primary'}" id="rs">New set</button>
+          <button class="btn" id="rc">Back to flashcards</button></div></div>`;
+      body.onclick=null;
+      if(missed.length)body.querySelector('#rm').onclick=()=>startOrder(shuffle(missed));
+      body.querySelector('#rs').onclick=()=>startOrder();
+      body.querySelector('#rc').onclick=()=>setMode('study');
+      return;
+    }
+    const r=list[i], n=r.steps.length;
+    const used=new Set(r.steps.map(x=>x.s));
+    const extra=shuffle(STEPS.filter(x=>!used.has(x.n)))[0];
+    const bank=shuffle([...r.steps.map((x,k)=>({id:'a'+k,s:x.s})),{id:'x',s:extra.n}]);
+    let picks=[], checked=false, allOk=false;
+    $('pcount').textContent=`Reaction ${i+1} / ${list.length}`; $('pscore').textContent=`Score: ${score}`;
+    function draw(){
+      const slots=Array.from({length:n},(_,k)=>{
+        const p=picks[k], ok=checked&&p&&p.s===r.steps[k].s;
+        return `<button class="slot ${p?'filled':''} ${checked?(ok?'good':'bad'):''}" data-k="${k}" ${checked?'disabled':''}><span class="sn">${k+1}</span>${p?stepLabel(p.s):'Tap a step below'}</button>`;
+      }).join('');
+      const chips=bank.map(b=>`<button class="chip" data-id="${b.id}" ${checked||picks.some(p=>p.id===b.id)?'disabled':''}>${stepLabel(b.s)}</button>`).join('');
+      let tail;
+      if(!checked){
+        tail=`<div class="answer-row"><button class="btn" id="clr" ${picks.length?'':'disabled'}>Clear</button><button class="btn primary" id="chk" ${picks.length===n?'':'disabled'}>Check answer</button></div>`;
+      }else{
+        tail=`<div class="explain"><b>${allOk?'Correct!':'Not quite.'}</b> ${allOk?'':`The correct order is below. “${stepLabel(extra.n)}” was the extra step and does not happen in this reaction.`}</div>
+          <div class="review">${r.steps.map((x,k)=>`<div class="st"><b>${k+1}. ${STEPS[x.s-1].name}</b><div class="eq">${x.eq}</div>${x.why}</div>`).join('')}</div>
+          <div style="margin-top:12px"><button class="btn primary" style="width:100%" id="nx">${i===list.length-1?'See results':'Next reaction →'}</button></div>`;
+      }
+      body.innerHTML=`<div class="rt">${r.title}</div><div class="rsub">${r.cond}</div>
+        <div class="qprompt" style="margin-top:12px">Put the ${n} elementary steps in order.<div class="rsub" style="margin:4px 0 0">One extra step in the bank does not belong.</div></div>
+        <div class="slots">${slots}</div><div class="bank">${chips}</div>${tail}`;
+    }
+    body.onclick=e=>{
+      const t=e.target.closest('button'); if(!t||t.disabled)return;
+      if(t.classList.contains('chip')&&picks.length<n){picks.push(bank.find(b=>b.id===t.dataset.id));draw();}
+      else if(t.classList.contains('slot')){picks.splice(+t.dataset.k,1);draw();}
+      else if(t.id==='clr'){picks=[];draw();}
+      else if(t.id==='chk'){
+        checked=true; allOk=picks.every((p,k)=>p.s===r.steps[k].s);
+        if(allOk)score++; else missed.push(r);
+        $('pscore').textContent=`Score: ${score}`; draw(); body.querySelector('.explain').scrollIntoView({behavior:'smooth',block:'nearest'});
+      }
+      else if(t.id==='nx'){i++;show();window.scrollTo({top:0});}
+    };
+    draw();
+  }
+  show();
 }
 
 /* ---------- Mode switch ---------- */
+let pracMode='order';
+function startPractice(){ pracMode==='order'?startOrder():startName(); }
 function setMode(m){
   [...$('modeSeg').children].forEach(x=>x.classList.toggle('on',x.dataset.mode===m));
-  $('study').classList.toggle('hidden',m!=='study'); $('quiz').classList.toggle('hidden',m!=='quiz');
-  if(m==='quiz')startQuiz(STEPS);
+  ['study','quiz','practice'].forEach(id=>$(id).classList.toggle('hidden',id!==m));
+  if(m==='quiz')startQuiz(); else if(m==='practice')startPractice();
 }
 $('modeSeg').addEventListener('click',e=>{const b=e.target.closest('button'); if(b)setMode(b.dataset.mode);});
+$('pracSeg').addEventListener('click',e=>{
+  const b=e.target.closest('button'); if(!b)return; pracMode=b.dataset.p;
+  [...$('pracSeg').children].forEach(x=>x.classList.toggle('on',x===b)); startPractice();
+});
 
 render(false);
 </script>
