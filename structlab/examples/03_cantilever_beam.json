@@ -1,0 +1,178 @@
+{
+  "format_version": 1,
+  "name": "Cantilever beam (4 elements)",
+  "dimension": 2,
+  "display_units": "SI",
+  "self_weight": false,
+  "gravity": [
+    0.0,
+    -9.81,
+    0.0
+  ],
+  "notes": "Tip deflection PL^3/(3EI)=5.625 mm down; M_fixed=PL=30 kN*m; V=10 kN.",
+  "nodes": [
+    {
+      "id": 1,
+      "x": 0.0,
+      "y": 0.0,
+      "z": 0.0
+    },
+    {
+      "id": 2,
+      "x": 0.75,
+      "y": 0.0,
+      "z": 0.0
+    },
+    {
+      "id": 3,
+      "x": 1.5,
+      "y": 0.0,
+      "z": 0.0
+    },
+    {
+      "id": 4,
+      "x": 2.25,
+      "y": 0.0,
+      "z": 0.0
+    },
+    {
+      "id": 5,
+      "x": 3.0,
+      "y": 0.0,
+      "z": 0.0
+    }
+  ],
+  "members": [
+    {
+      "id": 1,
+      "i": 1,
+      "j": 2,
+      "kind": "frame",
+      "material": "A36 Steel",
+      "section": {
+        "kind": "custom",
+        "params": {
+          "A": 0.01,
+          "Iz": 8e-05,
+          "Iy": 8e-05,
+          "J": 1e-08,
+          "c_y": 0.05,
+          "c_z": 0.05
+        }
+      },
+      "release_i": false,
+      "release_j": false,
+      "k_factor": 1.0
+    },
+    {
+      "id": 2,
+      "i": 2,
+      "j": 3,
+      "kind": "frame",
+      "material": "A36 Steel",
+      "section": {
+        "kind": "custom",
+        "params": {
+          "A": 0.01,
+          "Iz": 8e-05,
+          "Iy": 8e-05,
+          "J": 1e-08,
+          "c_y": 0.05,
+          "c_z": 0.05
+        }
+      },
+      "release_i": false,
+      "release_j": false,
+      "k_factor": 1.0
+    },
+    {
+      "id": 3,
+      "i": 3,
+      "j": 4,
+      "kind": "frame",
+      "material": "A36 Steel",
+      "section": {
+        "kind": "custom",
+        "params": {
+          "A": 0.01,
+          "Iz": 8e-05,
+          "Iy": 8e-05,
+          "J": 1e-08,
+          "c_y": 0.05,
+          "c_z": 0.05
+        }
+      },
+      "release_i": false,
+      "release_j": false,
+      "k_factor": 1.0
+    },
+    {
+      "id": 4,
+      "i": 4,
+      "j": 5,
+      "kind": "frame",
+      "material": "A36 Steel",
+      "section": {
+        "kind": "custom",
+        "params": {
+          "A": 0.01,
+          "Iz": 8e-05,
+          "Iy": 8e-05,
+          "J": 1e-08,
+          "c_y": 0.05,
+          "c_z": 0.05
+        }
+      },
+      "release_i": false,
+      "release_j": false,
+      "k_factor": 1.0
+    }
+  ],
+  "supports": [
+    {
+      "node": 1,
+      "fixed": [
+        true,
+        true,
+        true,
+        true,
+        true,
+        true
+      ],
+      "angle_deg": 0.0,
+      "settlement": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "spring": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ]
+    }
+  ],
+  "nodal_loads": [
+    {
+      "node": 5,
+      "force": [
+        0.0,
+        -10000.0,
+        0.0
+      ],
+      "moment": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    }
+  ],
+  "member_loads": [],
+  "thermal_loads": []
+}
